@@ -21,13 +21,17 @@ Technologies utilisées
 
 Captures d’écran
 
-1. Page de connexion
+### 1. Page de connexion
+![Page de connexion](screenshots/login.png)
 
-2. Page CV
+### 2. Page CV
+![Page CV](screenshots/cv.png)
 
-3. Page famille
+### 3. Page famille
+![Page famille](screenshots/famille.png)
 
-4. Page contact
+### 4. Page contact
+![Page contact](screenshots/contact.png)
 
 Auteur
 
