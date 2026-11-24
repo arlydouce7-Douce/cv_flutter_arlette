@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'services/api_service.dart';
 
 void main() {
 
@@ -853,106 +854,136 @@ class CVPage extends StatelessWidget {
 
 // PAGE 3 : MA FAMILLE
 
-class FamilyPage extends StatelessWidget {
-
+class FamilyPage extends StatefulWidget {
   const FamilyPage({super.key});
 
-  final List<String> membres = const [
+  @override
+  State<FamilyPage> createState() => _FamilyPageState();
+}
 
-    'Henrianne',
-
-    'Arlette',
-
-    'Asnath',
-
-    'Adrienne',
-
-    'Apoline',
-
-    'Archimede',
-
-    'Arnolde',
-
-    'Abednego',
-
-    'Archange',
-
-  ];
+class _FamilyPageState extends State<FamilyPage> {
+  late Future<List<dynamic>> membresFuture;
 
   @override
-
-  Widget build(BuildContext context) {
-
-    return ListView(
-
-      padding: const EdgeInsets.all(16),
-
-      children: [
-
-        const Text(
-
-          'Les membres de ma famille',
-
-          textAlign: TextAlign.center,
-
-          style: TextStyle(
-
-            fontSize: 21,
-
-            fontWeight: FontWeight.bold,
-
-            color: Color(0xFF142B4A),
-
-          ),
-
-        ),
-
-        const SizedBox(height: 15),
-
-        ...membres.map(
-
-          (nom) => Card(
-
-            margin: const EdgeInsets.only(bottom: 12),
-
-            child: ListTile(
-
-              leading: CircleAvatar(
-
-                backgroundColor: const Color(0xFF142B4A),
-
-                child: Text(
-
-                  nom[0].toUpperCase(),
-
-                  style: const TextStyle(color: Colors.white),
-
-                ),
-
-              ),
-
-              title: Text(
-
-                nom,
-
-                style: const TextStyle(fontWeight: FontWeight.bold),
-
-              ),
-
-              subtitle: const Text('Lien de parenté à préciser'),
-
-            ),
-
-          ),
-
-        ),
-
-      ],
-
-    );
-
+  void initState() {
+    super.initState();
+    membresFuture = ApiService().getFamilleMembres();
   }
 
+  void actualiser() {
+    setState(() {
+      membresFuture = ApiService().getFamilleMembres();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: membresFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Erreur de connexion à l’API'),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: actualiser,
+                  child: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final membres = snapshot.data ?? [];
+
+        if (membres.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.family_restroom,
+                  size: 60,
+                  color: Color(0xFF142B4A),
+                ),
+                const SizedBox(height: 12),
+                const Text('Aucun membre enregistré.'),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: actualiser,
+                  child: const Text('Actualiser'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            actualiser();
+            await membresFuture;
+          },
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text(
+                'Les membres de ma famille',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF142B4A),
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              ...membres.map((membre) {
+                final nomComplet = [
+                  membre['nom'] ?? '',
+                  membre['postnom'] ?? '',
+                  membre['prenom'] ?? '',
+                ].where((element) => element.toString().isNotEmpty).join(' ');
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0xFF142B4A),
+                      child: Icon(
+                        Icons.person,
+                        color: Colors.white,
+                      ),
+                    ),
+                    title: Text(
+                      nomComplet,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Parenté : ${membre['parente'] ?? ''}\n'
+                      'Lieu de naissance : ${membre['lieu_naissance'] ?? ''}\n'
+                      'Date de naissance : ${membre['date_naissance'] ?? ''}',
+                    ),
+                    isThreeLine: true,
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 // PAGE 4 : CONTACT
